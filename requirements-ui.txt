@@ -1,0 +1,6 @@
+# Everything needed to run streamlit_app.py
+# Install:  pip install -r requirements-ui.txt
+
+streamlit>=1.37,<2.0
+requests>=2.31,<3.0
+pandas>=2.0,<3.0

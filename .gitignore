@@ -27,6 +27,7 @@ key.json
 # ── Data (too large for GitHub) ───────────────────
 data/
 *.csv
+!sample_data.csv
 
 # ── Results (regeneratable) ───────────────────────
 results/

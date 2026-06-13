@@ -81,12 +81,14 @@ def api_get(path, timeout=5):
     except Exception:
         return None
 
+
 def api_post(path, payload, timeout=30):
     r = requests.post(f"{API_URL}{path}", json=payload, timeout=timeout)
     if r.status_code == 422:
         raise ValueError(f"Validation error: {r.json().get('detail', r.text)}")
     r.raise_for_status()
     return r.json()
+
 
 def api_upload_csv(file_bytes, filename, model, timeout=120):
     r = requests.post(
@@ -98,6 +100,7 @@ def api_upload_csv(file_bytes, filename, model, timeout=120):
         raise ValueError(f"Validation error: {r.json().get('detail', r.text)}")
     r.raise_for_status()
     return r.json()
+
 
 def render_result(result):
     is_purchase = result.get("prediction") == 1
@@ -165,12 +168,28 @@ tab_csv, tab_single, tab_compare, tab_api = st.tabs(
 with tab_csv:
     st.subheader("Upload CSV — Batch Prediction")
     st.caption(
-        "Upload **any CSV** — raw event-level data or session-level features. "
-        "The API handles everything: format detection, feature engineering, type casting, and prediction. "
-        "**No preprocessing needed on your side.**"
+        "Upload a CSV that matches the provided sample schema. "
+        "Download the sample CSV below or use your own dataset with the same columns."
     )
 
-    uploaded = st.file_uploader("Choose a CSV file", type=["csv"], key="csv_up")
+    st.info(
+        "📄 Tip: Use the sample CSV or upload your own dataset with the same schema."
+    )
+
+    with open("sample_data.csv", "rb") as f:
+        st.download_button(
+            label="📥 Download Sample CSV",
+            data=f,
+            file_name="sample_data.csv",
+            mime="text/csv",
+            use_container_width=True,
+        )
+
+    uploaded = st.file_uploader(
+        "Choose a CSV file",
+        type=["csv"],
+        key="csv_up",
+    )
 
     if uploaded is not None:
         try:
@@ -203,7 +222,9 @@ with tab_csv:
                             f"from **{result['raw_event_count']:,} events** (server-side)"
                         )
                     else:
-                        st.success(f"✅ Session-level data — **{result['session_count']:,} sessions** predicted directly")
+                        st.success(
+                            f"✅ Session-level data — **{result['session_count']:,} sessions** predicted directly"
+                        )
 
                     pred_df = pd.DataFrame(result["predictions"])
                     st.dataframe(pred_df, use_container_width=True)
@@ -256,12 +277,24 @@ with tab_single:
 
     with col_right:
         st.markdown("##### Categorical Features")
-        category = st.selectbox("Category", ["electronics", "clothing", "groceries", "home", "beauty", "sports", "toys", "books"], key="s_cat")
-        brand = st.selectbox("Brand", ["apple", "samsung", "nike", "adidas", "sony", "lg", "organicco", "other"], key="s_brand")
+        category = st.selectbox(
+            "Category",
+            ["electronics", "clothing", "groceries", "home", "beauty", "sports", "toys", "books"],
+            key="s_cat",
+        )
+        brand = st.selectbox(
+            "Brand",
+            ["apple", "samsung", "nike", "adidas", "sony", "lg", "organicco", "other"],
+            key="s_brand",
+        )
         channel = st.selectbox("Channel", ["web", "mobile_app", "social", "email"], key="s_chan")
         device = st.selectbox("Device", ["desktop", "mobile", "tablet"], key="s_dev")
         region = st.selectbox("Region", ["uk", "us", "eu", "jp", "in", "au", "other"], key="s_reg")
-        traffic = st.selectbox("Traffic Source", ["organic", "paid", "direct", "referral", "social"], key="s_traf")
+        traffic = st.selectbox(
+            "Traffic Source",
+            ["organic", "paid", "direct", "referral", "social"],
+            key="s_traf",
+        )
 
     session_data = {
         "price": price, "total_time_spent": total_time,
@@ -315,7 +348,12 @@ with tab_compare:
                         "Latency (ms)": ms,
                     })
                 except Exception as exc:
-                    rows.append({"Model": m, "Prediction": f"Error", "Probability": None, "Latency (ms)": None})
+                    rows.append({
+                        "Model": m,
+                        "Prediction": "Error",
+                        "Probability": None,
+                        "Latency (ms)": None,
+                    })
             if rows:
                 cdf = pd.DataFrame(rows)
                 st.dataframe(cdf, use_container_width=True, hide_index=True)

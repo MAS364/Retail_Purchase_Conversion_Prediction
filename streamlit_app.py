@@ -53,6 +53,18 @@ section[data-testid="stSidebar"] .stCaption, section[data-testid="stSidebar"] sp
 .status-ok { color: #10b981; font-weight: 600; }
 .status-err { color: #ef4444; font-weight: 600; }
 #MainMenu, footer, header { visibility: hidden; }
+
+/* Compact "model badge" shown next to the main-page model selector */
+.model-active-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 8px 14px;
+    color: #e2e8f0;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
 </style>
 """,
     unsafe_allow_html=True,
@@ -119,6 +131,38 @@ def render_result(result):
     )
 
 
+# ── Health check + model list (computed once, before any selector renders) ─────
+
+health = api_get("/health")
+if health:
+    available_models = health["models_loaded"]
+    default_model = health["default_model"]
+else:
+    available_models = ALL_MODELS_FALLBACK
+    default_model = "mlp"
+
+# Keep a single source of truth for the selected model across reruns,
+# so the sidebar selector and the main-page selector always agree —
+# this matters most on mobile, where the sidebar may be collapsed
+# and the user only ever sees the main-page control.
+if "selected_model" not in st.session_state:
+    st.session_state["selected_model"] = (
+        default_model if default_model in available_models else available_models[0]
+    )
+elif st.session_state["selected_model"] not in available_models:
+    st.session_state["selected_model"] = (
+        default_model if default_model in available_models else available_models[0]
+    )
+
+
+def _sync_from_sidebar():
+    st.session_state["selected_model"] = st.session_state["sidebar_model_select"]
+
+
+def _sync_from_main():
+    st.session_state["selected_model"] = st.session_state["main_model_select"]
+
+
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 
 with st.sidebar:
@@ -126,27 +170,24 @@ with st.sidebar:
     st.caption("ML-powered conversion prediction")
     st.divider()
 
-    health = api_get("/health")
     if health:
         st.markdown(
             f'<span class="status-ok">● API Online</span> — {len(health["models_loaded"])} models loaded',
             unsafe_allow_html=True,
         )
-        available_models = health["models_loaded"]
-        default_model = health["default_model"]
     else:
         st.markdown(
             '<span class="status-err">● API Offline</span>',
             unsafe_allow_html=True,
         )
-        available_models = ALL_MODELS_FALLBACK
-        default_model = "mlp"
 
     st.divider()
-    selected_model = st.selectbox(
+    st.selectbox(
         "Select Model",
         options=available_models,
-        index=available_models.index(default_model) if default_model in available_models else 0,
+        index=available_models.index(st.session_state["selected_model"]),
+        key="sidebar_model_select",
+        on_change=_sync_from_sidebar,
     )
     st.divider()
     st.caption(f"Endpoint: `{API_URL}`")
@@ -157,6 +198,34 @@ with st.sidebar:
 
 st.markdown("# Purchase Prediction Dashboard")
 st.caption("Predict whether an e-commerce session will convert to a purchase")
+
+# Main-page model selector + status — always visible regardless of sidebar
+# state, so it works on mobile where the sidebar starts collapsed.
+status_col, model_col = st.columns([3, 2])
+with status_col:
+    if health:
+        st.markdown(
+            f'<div class="model-active-badge">'
+            f'<span class="status-ok">● API Online</span> — {len(health["models_loaded"])} models loaded'
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            '<div class="model-active-badge"><span class="status-err">● API Offline</span></div>',
+            unsafe_allow_html=True,
+        )
+with model_col:
+    st.selectbox(
+        "Select Model",
+        options=available_models,
+        index=available_models.index(st.session_state["selected_model"]),
+        key="main_model_select",
+        on_change=_sync_from_main,
+        label_visibility="collapsed",
+    )
+
+selected_model = st.session_state["selected_model"]
 
 tab_csv, tab_single, tab_compare, tab_api = st.tabs(
     ["📊 CSV Upload", "🎯 Single Prediction", "⚖️ Model Comparison", "🔌 API Reference"]

@@ -1,7 +1,7 @@
 services:
-  # ===================================================================
+  # ==========================================================
   # FastAPI Backend
-  # ===================================================================
+  # ==========================================================
   - type: web
     name: retail-api
     runtime: docker
@@ -11,9 +11,8 @@ services:
 
     dockerfilePath: ./Dockerfile
 
-    autoDeploy: true
-
     plan: free
+    autoDeploy: true
 
     healthCheckPath: /health
 
@@ -24,12 +23,9 @@ services:
       - key: PYTHONDONTWRITEBYTECODE
         value: "1"
 
-      - key: PORT
-        value: "8080"
-
-  # ===================================================================
+  # ==========================================================
   # Streamlit Frontend
-  # ===================================================================
+  # ==========================================================
   - type: web
     name: retail-ui
     runtime: docker
@@ -39,17 +35,15 @@ services:
 
     dockerfilePath: ./Dockerfile.ui
 
+    plan: free
     autoDeploy: true
 
-    plan: free
-
     envVars:
-      # Replace after the backend is created
       - key: API_URL
-        sync: false
-
-      - key: PORT
-        value: "8501"
+        fromService:
+          type: web
+          name: retail-api
+          property: host
 
       - key: PYTHONUNBUFFERED
         value: "1"

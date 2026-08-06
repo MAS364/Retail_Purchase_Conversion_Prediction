@@ -1,0 +1,55 @@
+services:
+  # ===================================================================
+  # FastAPI Backend
+  # ===================================================================
+  - type: web
+    name: retail-api
+    runtime: docker
+
+    repo: https://github.com/MAS364/Retail_Purchase_Conversion_Prediction.git
+    branch: main
+
+    dockerfilePath: ./Dockerfile
+
+    autoDeploy: true
+
+    plan: free
+
+    healthCheckPath: /health
+
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+
+      - key: PYTHONDONTWRITEBYTECODE
+        value: "1"
+
+      - key: PORT
+        value: "8080"
+
+  # ===================================================================
+  # Streamlit Frontend
+  # ===================================================================
+  - type: web
+    name: retail-ui
+    runtime: docker
+
+    repo: https://github.com/MAS364/Retail_Purchase_Conversion_Prediction.git
+    branch: main
+
+    dockerfilePath: ./Dockerfile.ui
+
+    autoDeploy: true
+
+    plan: free
+
+    envVars:
+      # Replace after the backend is created
+      - key: API_URL
+        sync: false
+
+      - key: PORT
+        value: "8501"
+
+      - key: PYTHONUNBUFFERED
+        value: "1"

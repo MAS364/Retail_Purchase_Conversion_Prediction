@@ -1,0 +1,32 @@
+# ── Build stage ──────────────────────────────────────────────────────────────
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+COPY requirements-ui.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements-ui.txt
+
+# ── Production stage ────────────────────────────────────────────────────────
+FROM python:3.12-slim
+
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=8080
+
+WORKDIR /app
+
+COPY --from=builder /install /usr/local
+
+COPY streamlit_app.py .
+COPY sample_data.csv .
+
+USER appuser
+
+# Cloud Run injects $PORT and expects the app to listen on 0.0.0.0
+CMD streamlit run streamlit_app.py \
+    --server.port=$PORT \
+    --server.address=0.0.0.0 \
+    --server.headless=true \
+    --server.enableCORS=false \
+    --server.enableXsrfProtection=false

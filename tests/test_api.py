@@ -9,7 +9,13 @@ from fastapi.testclient import TestClient
 
 from app import app
 
+# TestClient must be entered as a context manager (or manually entered,
+# as below) to trigger FastAPI's lifespan startup event, which is what
+# loads the trained models. Without this, every /predict call fails
+# with "Model not available" even though the models load correctly
+# in the real running application.
 client = TestClient(app)
+client.__enter__()
 
 VALID_SESSION = {
     "price": 150.0, "total_time_spent": 120,

@@ -66,7 +66,7 @@ class PredictionResponse(BaseModel):
 
 
 class BatchRequest(BaseModel):
-    sessions: list[SessionInput] = Field(..., max_length=1000)
+    sessions: list[SessionInput] = Field(..., min_length=1, max_length=1000)
     model: Optional[str] = Field(default=None)
 
 

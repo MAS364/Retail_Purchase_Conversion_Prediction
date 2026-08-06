@@ -132,8 +132,27 @@ def render_result(result):
 
 
 # ── Health check + model list (computed once, before any selector renders) ─────
+# On a free-tier host, the backend may be asleep and take 30-60s to wake on
+# the first request. A single 5s health check would fail during that window
+# and show "API Offline", which looks permanently broken rather than just
+# starting up. This retries with a visible message instead of failing fast.
 
 health = api_get("/health")
+if health is None:
+    wake_placeholder = st.empty()
+    max_wait_seconds = 60
+    poll_interval = 3
+    waited = 0
+    while health is None and waited < max_wait_seconds:
+        wake_placeholder.info(
+            f"⏳ Waking up the server (free-tier hosting sleeps after inactivity, "
+            f"this can take up to a minute)... {waited}s"
+        )
+        time.sleep(poll_interval)
+        waited += poll_interval
+        health = api_get("/health", timeout=10)
+    wake_placeholder.empty()
+
 if health:
     available_models = health["models_loaded"]
     default_model = health["default_model"]

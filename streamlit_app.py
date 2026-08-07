@@ -14,14 +14,9 @@ import requests
 import pandas as pd
 import streamlit as st
 
-api_url = os.environ.get("API_URL")
+API_URL = os.environ.get("API_URL", "http://localhost:8080").rstrip("/")
 
-if api_url:
-    if not api_url.startswith(("http://", "https://")):
-        api_url = f"https://{api_url}"
-    API_URL = api_url.rstrip("/")
-else:
-    API_URL = "http://localhost:8080"
+
 
 st.set_page_config(
     page_title="Purchase Predictor",

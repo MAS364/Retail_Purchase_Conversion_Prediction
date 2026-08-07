@@ -14,7 +14,10 @@ import requests
 import pandas as pd
 import streamlit as st
 
-API_URL = os.environ.get("API_URL", "http://localhost:8080").rstrip("/")
+API_URL = os.environ.get(
+    "API_URL",
+    "https://retail-purchase-conversion-prediction.onrender.com"
+).rstrip("/")
 
 
 
